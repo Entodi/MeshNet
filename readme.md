@@ -1,6 +1,6 @@
 # End-to-end learning for brain tissue segmentation
 
-This repository contains Torch implementation of MeshNet architecture. MeshNet is volumetric convolutional neural network for image segmentation. MeshNet is based on dilated convolutions [1]. Model has been trained for brain tissue segmentation from imperfect labeling obtained using FreeSurfer automatic approach. The repository also contains weights of trained model with volumetric dropout.
+This repository contains Torch implementation of MeshNet architecture. MeshNet is volumetric convolutional neural network based on dilated kernels [1] for image segmentation. Model has been trained for brain tissue segmentation from imperfect labeling obtained using FreeSurfer automatic approach. The repository also contains weights of trained model with volumetric dropout.
 
 # Details
 
