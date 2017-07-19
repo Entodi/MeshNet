@@ -1,0 +1,1 @@
+th metrics.lua -modelFile ./saved_models/model_Mon_Jul_10_16:43:55_2017/model_103.t7 -foldList ./metrics/brain1.txt -xLen 68 -yLen 68 -zLen 68 -gpuDevice 4 -nClasses 3 -savePred 1 -filenameAdd 'vd103'
