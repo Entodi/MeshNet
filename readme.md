@@ -25,9 +25,9 @@ The repository has following structure:
 - **prepare_data.lua**  
   Example code for preparing data from numpy format to torch format. Maps intensity to unit interval.
 - **train.sh**  
-  Example bash script for model training. The script have been used to train saved model.
+  Example bash script for model training. The script has been used to train saved model.
 - **metrics.sh**  
-  Example bash script for calculating metrics and save prediction
+  Example bash script for calculating metrics and saving prediction
 - **mklabels.sh**  
   Bash script to prepare data and labels to numpy format from Human Connectome Project [3]. (**IMPORTANT: labels have been fixed after expert review**)
 
