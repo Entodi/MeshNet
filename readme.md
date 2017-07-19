@@ -36,7 +36,7 @@ The repository has following structure:
   Validation fold with 2 subjects
 
 Model has been trained on 20 subjects T1 3T MRI images with slice thickness 1mm x 1mm x 1mm (256 x 256 x 256) from Human Connectome Project [3] and validated on 2 subjects during training.
-More details about training process in paper [2]. **IMPORTANT: model on github uses Volumetric Dropout instead of 1D Dropout (due to significant improvements). One epoch consists of 2048 subvolumes with size 68 x 68 x 68 and validated on same amount of subvolumes. Model is 219 epoch old.**
+More details about the training process are published at IJCNN 2017 and described in a more up to date paper [2]. **IMPORTANT: model on github uses Volumetric Dropout instead of 1D Dropout (due to significant improvements). One epoch consists of 2048 subvolumes with size 68 x 68 x 68 and validated on same amount of subvolumes. Model is 219 epoch old.**
 
 Code is written on Lua using Torch deep learning library (http://torch.ch/).
 Additional packages are required: torch-randomkit (https://github.com/deepmind/torch-randomkit), npy4th (https://github.com/htwaijry/npy4th), torch-dataframe (https://github.com/AlexMili/torch-dataframe), csvigo (https://github.com/clementfarabet/lua---csv).
