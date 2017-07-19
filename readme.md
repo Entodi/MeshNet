@@ -30,6 +30,10 @@ The repository has following structure:
   Example bash script for calculating metrics and saving prediction
 - **mklabels.sh**  
   Bash script to prepare data and labels to numpy format from Human Connectome Project [3]. (**IMPORTANT: labels have been fixed after expert review**)
+- **train_fold.txt**  
+  Training fold with 20 subjects
+- **valid_fold.txt**  
+  Validation fold with 2 subjects
 
 Model has been trained on 20 subjects T1 3T MRI images with slice thickness 1mm x 1mm x 1mm (256 x 256 x 256) from Human Connectome Project [3] and validated on 2 subjects during training.
 More details about training process in paper [2]. **IMPORTANT: model on github uses Volumetric Dropout instead of 1D Dropout (due to significant improvements). One epoch consists of 2048 subvolumes with size 68 x 68 x 68 and validated on same amount of subvolumes. Model is 219 epoch old.**
@@ -39,7 +43,7 @@ Additional packages are required: torch-randomkit (https://github.com/deepmind/t
 
 Model has been trained using NVIDIA Titan X (Pascal) with 12 GB. Model is using 9817 MB of GPU memory during training with batch size 1. Train time is about 3-4 days.
 
-# Results
+# Result on subject **105216**
 | T1 MRI  | FreeSurfer | MeshNet |
 |---|---|---|
 | ![Alt Text](https://github.com/Entodi/MeshNet/blob/master/gif/axial_t1.gif?raw=true)  |  ![Alt Text](https://github.com/Entodi/MeshNet/blob/master/gif/axial_fs.gif?raw=true)  | ![Alt Text](https://github.com/Entodi/MeshNet/blob/master/gif/axial_219.gif?raw=true)   |
@@ -53,4 +57,4 @@ Model has been trained using NVIDIA Titan X (Pascal) with 12 GB. Model is using 
 
 # Questions
 
-You can ask any questions about implementation and trainng by sending message to **afedorov@mrn.org**.
+You can ask any questions about implementation and training by sending message to **afedorov@mrn.org**.
