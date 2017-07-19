@@ -34,7 +34,10 @@ The repository has following structure:
 Model has been trained on 20 subjects T1 3T MRI images with slice thickness 1mm x 1mm x 1mm (256 x 256 x 256) from Human Connectome Project [3] and validated on 2 subjects during training.
 More details about training process in paper [2]. **IMPORTANT: model on github uses Volumetric Dropout instead of 1D Dropout (due to significant improvements). One epoch consists of 2048 subvolumes with size 68 x 68 x 68 and validated on same amount of subvolumes. Model is 219 epoch old.**
 
-Model has been trained using NVIDIA Titan X (Pascal) with 12 GB. Model using 9817 MB of GPU memory during training with batch size 1. Train time is about 3-4 days.
+Code is written on Lua using Torch deep learning library (http://torch.ch/).
+Additional packages are required: torch-randomkit (https://github.com/deepmind/torch-randomkit), npy4th (https://github.com/htwaijry/npy4th), torch-dataframe (https://github.com/AlexMili/torch-dataframe), csvigo (https://github.com/clementfarabet/lua---csv).
+
+Model has been trained using NVIDIA Titan X (Pascal) with 12 GB. Model is using 9817 MB of GPU memory during training with batch size 1. Train time is about 3-4 days.
 
 # Results
 | T1 MRI  | FreeSurfer | MeshNet |

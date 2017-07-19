@@ -10,7 +10,6 @@ require 'math'
 require 'randomkit'
 require 'os'
 npy4th = require 'npy4th'
-distr = require 'distributions'
 
 local utils = {}
 
