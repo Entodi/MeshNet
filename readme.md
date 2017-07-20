@@ -20,14 +20,18 @@ The repository has following structure:
   Torch Lua code for training models
 - **metrics.lua**  
   Torch Lua code for calculating F1 (equivalent to DICE score) and AVD metrics and for saving prediction.
+- **predict.lua**
+  Torch Lua code to predict segmentation given data and model
 - **utils.lua**  
   Torch Lua code for utility functions.
 - **prepare_data.lua**  
   Example code for preparing data from numpy format to torch format. Maps intensity to unit interval.
 - **train.sh**  
-  Example bash script for model training. The script has been used to train saved model.
+  Example bash script for model training using **train.lua**.
 - **metrics.sh**  
-  Example bash script for calculating metrics and saving prediction
+  Example bash script for calculating metrics using **metrics.lua**.
+- **predict.sh**
+  Example bash script to create prediction using **predict.lua**.
 - **mklabels.sh**  
   Bash script to prepare data and labels to numpy format from Human Connectome Project [3]. (**IMPORTANT: labels have been fixed after expert review**)
 - **train_fold.txt**  

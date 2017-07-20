@@ -11,9 +11,9 @@ if not opt then
   cmd:text('Prediction')
   cmd:text()
   cmd:text('Options:')
-  cmd:option('-foldList', '', 'Name of file with fold of brains')
+  cmd:option('-brainPath', '', 'Path to input brain directory')
   cmd:option('-modelFile', '', 'Name of file with model weights')
-  cmd:option('-outputFile', 'metrics.csv', 'Output metrics csv name')
+  cmd:option('-outputFile', 'segmentation.npy', 'Output segmentation name')
   cmd:option('-xLen', 68, 'sub-cube side length of brain data cube by x')
   cmd:option('-yLen', 68, 'sub-cube side length of brain data cube by y')
   cmd:option('-zLen', 68, 'sub-cube side length of brain data cube by z')
@@ -33,20 +33,11 @@ print(opt)
 torch.manualSeed(opt.seed)
 -- set GPU device
 cutorch.setDevice(opt.gpuDevice)
--- load brains
-local foldList = utils.lines_from(opt.foldList)
-print (foldList)
-local brains = utils.load_brains(foldList)
+-- load brain
+local brain = utils.load_brain(opt.brainPath)
 -- load model weights
 local model = utils.load_prediction_model(opt.modelFile)
--- calculate metrics
-local brain_metrics = {}
-for i = 1, #brains do
-  print('Loading ' .. i .. 'th brain ' .. foldList[i])
-  local segmentation, time = utils.predict(brains[i], model, opt)
-  brain_metrics[i] = utils.calculate_metrics(segmentation, brains[i].target, opt.nClasses)
-  brain_metrics[i].time = time
-  collectgarbage()
-end
-print ('Saving metrics')
-utils.save_metrics(foldList, brain_metrics, opt.nClasses, opt.outputFile)
+-- make prediction
+segmentation, time = utils.predict(brain, model, opt)
+-- save prediction
+npy4th.savenpy(opt.brainPath .. opt.outputFile, segmentation - 1)

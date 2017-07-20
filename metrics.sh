@@ -1,1 +1,1 @@
-th metrics.lua -modelFile ./saved_models/model_Mon_Jul_10_16:43:55_2017/model_219.t7 -foldList brains.txt -xLen 68 -yLen 68 -zLen 68 -MRI_zLen 256 -MRI_yLen 256 -MRI_xLen 256 -batchSize 1 -gpuDevice 1 -nClasses 3 -savePred 1 -filenameAdd 'vdp219'
+th metrics.lua -modelFile ./saved_models/model_Mon_Jul_10_16:43:55_2017/model_219.t7 -foldList valid_fold.txt

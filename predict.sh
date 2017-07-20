@@ -1,0 +1,1 @@
+th predict.lua -modelFile ./saved_models/model_Mon_Jul_10_16:43:55_2017/model_219.t7 -brainPath ./105216/T1w/105216/mri/ -xLen 68 -yLen 68 -zLen 68 -gpuDevice 1

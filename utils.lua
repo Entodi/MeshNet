@@ -8,69 +8,308 @@ require 'csvigo'
 require 'image'
 require 'math'
 require 'randomkit'
+require 'Dataframe'
 require 'os'
 npy4th = require 'npy4th'
 
 local utils = {}
 
-function utils.prepare_data(foldFilename, fileTypes, saveas, MRI_zLen, MRI_yLen, MRI_xLen)
+function utils.init_identity(net)
   --[[
-  Prepares data from numpy format to torch format and combines to one file.
+  Inits with identity weights
 
   Args:
-    foldFilename: file with paths to subjects brains
-    fileTypes: types of file to encapsulated to torch format, last file is target file
-    saveas: filename of output brain
+    net: network model
   ]]
-  fileTypes = fileTypes or {'T1w_acpc_dc_restore.npy', 'T2w_acpc_dc_restore.npy', 'T1w_acpc_dc_restore_media.npz', 'T2w_acpc_dc_restore_median.npz', 'atlas07.npy'}
-  saveas = saveas or 'brain.t7'
-  list = utils.lines_from(filename)
-  for i = 1, #list do
-    print (list[i])
-    local data = {}
-    data.input = torch.FloatTensor(#fileTypes - 1, MRI_zLen, MRI_yLen, MRI_xLen)
-    for j = 1, #fileTypes - 1 do
-      t = npy4th.loadnpy(list[i] .. fileTypes[j]):float()
-      -- scale to unit interval
-      t = (t - t:min()) / (t:max() - t:min())
-      data.input[{j, {}, {}, {}}] = t
+  local identity3x3x3 = torch.FloatTensor(3,3,3):fill(0)
+  identity3x3x3[{1,1,1}] = 1
+
+  local n_layer = 1
+  for i = 1, #net.modules do
+    local m = net.modules[i]
+    if m.__typename == 'nn.VolumetricDilatedConvolution' then
+      m.bias = torch.FloatTensor(m.bias:size()):fill(0)
+      m.bias = randomkit.normal(m.bias, 0, 2.0/(m.nInputPlane + m.nOutputPlane))
+      for out_f = 1, m.nOutputPlane do
+        for in_f = 1, m.nInputPlane do
+          if n_layer ~= 8 then
+            t = torch.FloatTensor(3,3,3):fill(0)
+            t = randomkit.normal(t, 0, 2.0/(m.nInputPlane + m.nOutputPlane))
+            t[{1,1,1}] = 1 + randomkit.normal(0, 2.0/(m.nInputPlane + m.nOutputPlane))
+            m.weight[{out_f, in_f, {}, {}, {}}] = t:clone()
+          else
+            m.weight[{out_f, in_f, {}, {}, {}}] = 1 + randomkit.normal(0, 2.0/(m.nInputPlane + m.nOutputPlane))
+          end
+        end
+      end
+      n_layer = n_layer + 1
     end
-    data.target = {}
-    data.target = npy4th.loadnpy(list[i] .. fileTypes[#fileTypes]):int()
-    -- torch labels start from 1, not from 0
-    data.target = data.target:add(1)
-    torch.save(list[i] .. saveas, data)
   end
 end
 
-function utils.load_brains(fold, nModal, MRI_zLen, MRI_yLen, MRI_xLen, extend)
+function utils.train(net, criterion, optimMethod, data, coordinates, amount, nPerBrain, batchSize, subsizes, lossInfo)
   --[[
-  Load brains in torch format from fold.
+  Inits with identity weights
 
   Args:
-    fold: table with pathes to brain files
-    nModal: number of modalities
-    MRI_zLen: MRI z-axis side length
-    MRI_yLen: MRI y-axis side length
-    MRI_xLen: MRI x-axis side length
+    net: network model 
+    criterion: criterion
+    optimMethod: optimization method
+    data: data with brains and labels
+    coordinates: generated coordinate grid for subvolumes
+    amount: amount of subvolumes per epoch
+    nPerBrain: amount of subvolumes generated per brain,
+    batchSize: mini-batch size
+    subsizes: subvolumes sizes
+    lossInfo: table with mean and std of loss function values per epoch
+  ]]
+  net:training()
+  print 'Training'
+  local time = sys.clock()
+  local overall_train_loss = torch.Tensor(amount / batchSize)
+  local i = 1
+  for t = 1, amount, batchSize do
+    local inputs, targets = utils.create_cuda_mini_batch(
+      data, coordinates, batchSize, subsizes, nPerBrain, 0, 'train')
+    local trainFunc = function(x)
+      if x ~= parameters then
+        parameters:copy(x)
+      end
+      gradParameters:zero()
+      local outputs = net:forward(inputs)
+      local loss = criterion:forward(outputs, targets)
+      overall_train_loss[i] = loss
+      i = i + 1
+      local df_do = criterion:backward(outputs, targets)
+      net:backward(inputs, df_do)
+      return loss, gradParameters
+    end
+    optimMethod(trainFunc, parameters, optimState)
+  end
+  table.insert(lossInfo.trainMean, overall_train_loss:mean())
+  table.insert(lossInfo.trainStd, overall_train_loss:std())
+  time = sys.clock() - time
+  print("time to learn 1 epoch = " .. (time * 1000) .. 'ms')
+end
+
+function utils.valid(net, criterion, data, coordinates, amount, nPerBrain, batchSize, subsizes, lossInfo)
+  --[[
+  Inits with identity weights
+
+  Args:
+    net: network model 
+    criterion: criterion
+    data: data with brains and labels
+    coordinates: generated coordinate grid for subvolumes
+    amount: amount of subvolumes per epoch
+    nPerBrain: amount of subvolumes generated per brain,
+    batchSize: mini-batch size
+    subsizes: subvolumes sizes
+    lossInfo: table with mean and std of loss function values per epoch
+  ]]
+  net:evaluate()
+  print 'Validating'
+  local time = sys.clock()
+  local overall_valid_loss = torch.Tensor(amount / batchSize)
+  local k = 1
+  for t = 1, amount, batchSize do
+    local inputs, targets = utils.create_cuda_mini_batch(
+      data, coordinates, batchSize, subsizes, nPerBrain, t, 'valid')
+    local outputs = net:forward(inputs)
+    overall_valid_loss[k] = criterion:forward(outputs, targets)
+    k = k + 1
+  end
+  table.insert(lossInfo.validMean, overall_valid_loss:mean())
+  table.insert(lossInfo.validStd, overall_valid_loss:std())
+  time = sys.clock() - time
+  time = time / amount
+  print("time to valid 1 sample = " .. (time*1000) .. 'ms')
+end
+
+
+function utils.calculate_metrics(prediction, target, nClasses)
+  --[[
+  Calculates metrics from prediction
+
+  Args:
+    prediction: model prediction
+    target: ground thruth labels
+    nClasses: number of classes
+  Returns:
+    brain_metrics: calculated metrics
+  ]]
+  local splitted_output = utils.split_classes(prediction, nClasses)  
+  local splitted_target = utils.split_classes(target, nClasses)
+  local brain_metrics = {}
+  brain_metrics.f1_score = {}
+  brain_metrics.avd = {}
+  for c = 1, nClasses do
+    brain_metrics.f1_score[c] = 
+      utils.f1_score(splitted_output[c], splitted_target[c])
+    brain_metrics.avd[c] = 
+      utils.average_volumetric_difference(splitted_output[c], splitted_target[c])
+  end
+  return brain_metrics
+end
+
+function utils.save_metrics(foldList, brain_metrics, nClasses, outputFile)
+  --[[
+  Save metrics to csv
+
+  Args:
+    brain_metrics: table with metrics
+    nClasses: number of classes
+    outputFile: filename to save
+  ]]
+  local model_csv = {}
+  model_csv['brain'] = {}
+  model_csv['time'] = {}
+  local first_run = true
+  for c = 1, nClasses do
+    model_csv['f1_' .. tostring(c)] = {}
+    model_csv['avd_' .. tostring(c)] = {}
+    for b = 1, #brain_metrics do
+      if first_run then
+        model_csv.brain[b] = foldList[b]
+        model_csv.time[b] = brain_metrics[b].time 
+      end
+      model_csv['f1_' .. tostring(c)][b] = brain_metrics[b].f1_score[c]
+      model_csv['avd_' .. tostring(c)][b] = brain_metrics[b].avd[c]  
+    end
+    first_run = false
+  end
+  local df = Dataframe()
+  print (model_csv)
+  df:load_table{data=Df_Dict(model_csv)}
+  df:to_csv(outputFile)
+end
+
+function utils.predict(brain, model, opt)
+  --[[
+  Predicts segmentation.
+
+  Args:
+    brain: brain with input and target (loaded using utils.load_brain)
+    model: model weights
+    opt: table with options
+  Returns:
+    segmentation: predicted segmentation
+  ]]
+  -- define gathering function
+  local gather_function = {}
+  if opt.predType == 'maxclass' then
+    gather_function = utils.gather_maxclass
+  elseif opt.predType == 'maxsoftmax' then
+    gather_function = utils.gather_maxsoftmax
+  else
+    print('Invalid prediction type. Should be maxclass or maxsoftmax.')
+  end
+  -- define extend
+  local extend = opt.extend or {{0, 0}, {0, 0}, {0, 0}}
+  -- define volume sizes
+  local sizes = brain.input:size()
+    -- define subvolumes sizes
+  local subsizes = {sizes[1], opt.zLen, opt.yLen, opt.xLen}
+  -- define mean and std for gaussian sampling
+  local mean = opt.mean or {sizes[2]/2,  sizes[3]/2,  sizes[4]/2}
+  local std = opt.std or {sizes[2]/6, sizes[3]/6, sizes[4]/6}
+  -- define softmax layer
+  local softmax = cudnn.VolumetricLogSoftMax():cuda()
+  -- correct number of subvvolumes based of batchsize
+  opt.nSubvolumes = opt.nSubvolumes - opt.nSubvolumes % opt.batchSize
+  -- define coordinate grid
+  local coords_grid = coords_grid or utils.create_dataset_coords(
+    sizes, opt.nSubvolumes, subsizes, extend, opt.sampleType, mean, std)
+  -- define output segmentation
+  local segmentation = {}
+  if opt.predType == 'maxclass' then
+    segmentation = torch.IntTensor(opt.nClasses, 
+      sizes[2] + extend[1][1] + extend[1][2], 
+      sizes[3] + extend[2][1] + extend[2][2], 
+      sizes[4] + extend[3][1] + extend[3][2]):fill(0)
+  elseif opt.predType == 'maxsoftmax' then
+    segmentation = torch.DoubleTensor(opt.nClasses,
+      sizes[2] + extend[1][1] + extend[1][2],
+      sizes[3] + extend[2][1] + extend[2][2],
+      sizes[4] + extend[3][1] + extend[3][2]):fill(0)
+  else
+    print('Invalid prediction type. Should be maxclass or maxsoftmax.')
+  end
+  -- predict
+  local time = sys.clock()
+  for i = 1, #coords_grid, opt.batchSize do
+    local inputs, targets = utils.create_cuda_mini_batch(
+      {brain}, coords_grid, opt.batchSize, 
+      subsizes, opt.nSubvolumes, i, 'test')
+    local outputs = model:forward(inputs)
+    outputs = softmax:forward(outputs)
+    segmentation = gather_function(outputs, segmentation, coords_grid, i)
+  end
+  local maxs, segmentation = torch.max(segmentation, 1)
+  time = sys.clock() - time
+  print (time, 'seconds')
+  brain = utils.reduceData(brain, extend)
+  segmentation = utils.reduceOutput(segmentation, extend)[1]
+  return segmentation, time
+end
+
+function utils.load_brains(pathes, extend, inputFiles, labelFile)
+  --[[
+  Load brains from fold.
+
+  Args:
+    pathes: table with pathes to brains directories
+    inputFiles: filenames with input images (for example: 'T1.npy', 'T2.npy'} for multi modal case)
+    labelFile: filename with labels
     extend: table of extensions of MRI image for every axis from left and right sides (Example table to extend from every side of axises MRI image by 10: {{10, 10}, {10, 10}, {10, 10}})
   Returns:
     data: table with brains
   ]]
+  if #pathes == 0 then
+    print 'No pathes to brains directories'
+    return {}
+  end
+  inputFiles = inputFiles or {'T1.npy'}
+  labelFile = labelFile or 'gm_wm.npy'
+  extend = extend or {{0, 0}, {0, 0}, {0, 0}}
   local data = {}
-  for i = 1, #fold do
-    data[i] = {}
-    data[i].input = torch.FloatTensor(nModal, MRI_zLen, MRI_yLen, MRI_xLen)
-    filename = fold[i]
-    print (filename)
-    temp = torch.load(filename)
-    for j = 1, nModal do
-      data[i].input[{j, {}, {}, {}}] = temp.input[{j, {}, {}, {}}]:clone()
-    end
-    data[i].target = temp.target:clone()
-    data[i] = utils.extendData(data[i], extend)
+  for i = 1, #pathes do
+    data[i] = utils.load_brain(pathes[i], extend, inputFiles, labelFile)
   end
   return data
+end
+
+function utils.load_brain(path, extend, inputFiles, labelFile)
+    --[[
+    Load brains from fold.
+
+    Args:
+      path: path to brain directory
+      inputFiles: filenames with input images (for example: 'T1.npy', 'T2.npy'} for multi modal case)
+      labelFile: filename with labels
+      extend: table of extensions of MRI image for every axis from left and right sides (Example table to extend from every side of axises MRI image by 10: {{10, 10}, {10, 10}, {10, 10}})
+    Returns:
+      data: brain data
+    ]]
+    inputFiles = inputFiles or {'T1.npy'}
+    labelFile = labelFile or 'gm_wm.npy'
+    extend = extend or {{0, 0}, {0, 0}, {0, 0}}
+    local data = {}
+    for j = 1, #inputFiles do
+      local t = npy4th.loadnpy(path .. inputFiles[j]):float()
+      -- scale to unit interval
+      t = (t - t:min()) / (t:max() - t:min())
+      if j == 1 then
+        data.input = torch.FloatTensor(#inputFiles, t:size()[1], t:size()[2], t:size()[3])
+      end
+      data.input[{j, {}, {}, {}}] = t
+    end
+    data.target = {}
+    data.target = npy4th.loadnpy(path .. labelFile):int()
+    -- torch labels start from 1, not from 0
+    data.target = data.target:add(1)
+    data = utils.extendData(data, extend)
+    return data
 end
 
 function utils.nooverlapCoordinates(sizes, subsizes, extend)
@@ -86,16 +325,16 @@ function utils.nooverlapCoordinates(sizes, subsizes, extend)
   ]]
   local coords = {}
   local k = 1
-  for z1 = 1 + extend[1][1], sizes[2] - extend[1][2] - subsizes[1] + 1, subsizes[1] do
-    for y1 = 1 + extend[2][1], sizes[3] - extend[2][2] - subsizes[2] + 1, subsizes[2] do
-      for x1 = 1 + extend[3][1], sizes[4] - extend[3][2] - subsizes[3] + 1, subsizes[3] do
+  for z1 = 1 + extend[1][1], sizes[2] - extend[1][2] - subsizes[2] + 1, subsizes[2] do
+    for y1 = 1 + extend[2][1], sizes[3] - extend[2][2] - subsizes[3] + 1, subsizes[3] do
+      for x1 = 1 + extend[3][1], sizes[4] - extend[3][2] - subsizes[4] + 1, subsizes[4] do
         coords[k] = {}
         coords[k].z1 = z1
         coords[k].y1 = y1
         coords[k].x1 = x1
-        coords[k].z2 = coords[k].z1 + subsizes[1] - 1
-        coords[k].y2 = coords[k].y1 + subsizes[2] - 1
-        coords[k].x2 = coords[k].x1 + subsizes[3] - 1
+        coords[k].z2 = coords[k].z1 + subsizes[2] - 1
+        coords[k].y2 = coords[k].y1 + subsizes[3] - 1
+        coords[k].x2 = coords[k].x1 + subsizes[4] - 1
         k = k + 1
       end
     end
@@ -122,7 +361,7 @@ function utils.gaussianCoordinates(sizes, subsizes, amount, mean, std)
     sizes[4] / 2}
   std = std or {50, 50, 50}
   local coords = {}
-  local half_subsizes = {subsizes[1] / 2, subsizes[2] / 2, subsizes[3] / 2}
+  local half_subsizes = {subsizes[2] / 2, subsizes[3] / 2, subsizes[4] / 2}
   local left_bound = {half_subsizes[1], half_subsizes[2], half_subsizes[3]}
   local right_bound = {sizes[2] - half_subsizes[1] + 1,
     sizes[3] - half_subsizes[2] + 1, sizes[4] - half_subsizes[3] + 1}
@@ -139,9 +378,9 @@ function utils.gaussianCoordinates(sizes, subsizes, amount, mean, std)
       coords[k].z1 = rc[1] - half_subsizes[1] + 1
       coords[k].y1 = rc[2] - half_subsizes[2] + 1
       coords[k].x1 = rc[3] - half_subsizes[3] + 1
-      coords[k].z2 = coords[k].z1 + subsizes[1] - 1
-      coords[k].y2 = coords[k].y1 + subsizes[2] - 1
-      coords[k].x2 = coords[k].x1 + subsizes[3] - 1
+      coords[k].z2 = coords[k].z1 + subsizes[2] - 1
+      coords[k].y2 = coords[k].y1 + subsizes[3] - 1
+      coords[k].x2 = coords[k].x1 + subsizes[4] - 1
       k = k + 1
     end
   end
@@ -329,7 +568,7 @@ end
 
 function utils.gather_maxsoftmax(dnnOutput, outputCube, coords, offset)
    --[[
-  Combine sofrmax from splitted prediction to volume by coordinates
+  Combine softmax values from splitted prediction to volume by coordinates
 
   Args:
     dnnOutput: output from MeshNet
@@ -527,7 +766,7 @@ function utils.create_dataset_coords(sizes, amount, subsizes, extend, sample_typ
   return dataset_coords     
 end
 
-function utils.create_cuda_mini_batch(data, dataset_coords, batchSize, subsizes, nModal, nPerBrain, offset, mode)
+function utils.create_cuda_mini_batch(data, dataset_coords, batchSize, subsizes, nPerBrain, offset, mode)
   --[[
   Creates CUDA mini batch from data
 
@@ -545,7 +784,7 @@ function utils.create_cuda_mini_batch(data, dataset_coords, batchSize, subsizes,
     targets: in 'train' and 'valid' mode returns CUDA batch, in 'test' mode returns empty table
   ]]
   local inputs, targets = utils.create_mini_batch(
-    data, dataset_coords, batchSize, subsizes, nModal, nPerBrain, offset, mode)
+    data, dataset_coords, batchSize, subsizes, nPerBrain, offset, mode)
   if mode ~= 'test' then
     return inputs:cuda(), targets:cuda()
   else
@@ -553,7 +792,7 @@ function utils.create_cuda_mini_batch(data, dataset_coords, batchSize, subsizes,
   end
 end
 
-function utils.create_mini_batch(data, dataset_coords, batchSize, subsizes, nModal, nPerBrain, offset, mode)
+function utils.create_mini_batch(data, dataset_coords, batchSize, subsizes, nPerBrain, offset, mode)
    --[[
   Creates mini batch from data
 
@@ -572,11 +811,11 @@ function utils.create_mini_batch(data, dataset_coords, batchSize, subsizes, nMod
   ]]
   mode = mode or 'train'
   local inputs = torch.FloatTensor(
-    batchSize, nModal, subsizes[1], subsizes[2], subsizes[3])
+    batchSize, subsizes[1], subsizes[2], subsizes[3], subsizes[4])
   local targets = {}
   if mode ~= 'test' then
     targets = torch.IntTensor(
-      batchSize, subsizes[1], subsizes[2], subsizes[3])
+      batchSize, subsizes[2], subsizes[3], subsizes[4])
   end
   if mode == 'train' then
     for i = 1, batchSize do
@@ -616,6 +855,4 @@ function utils.create_mini_batch(data, dataset_coords, batchSize, subsizes, nMod
   return inputs, targets
 end
 
-
 return utils
-
