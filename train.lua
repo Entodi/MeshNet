@@ -133,7 +133,7 @@ for i = 1, opt.nEpochs do
   -- training
   utils.train(net, criterion, optimMethod, trainData, trainDataset, trainAmount, opt.nTrainPerEpoch, opt.batchSize, subsizes, lossInfo)
   -- validating
-  utils.valid(net, criterion, validData, validDataset, validAmount, opt.nValidSubCubesPerBrain, opt.batchSize, ubsizes, lossInfo)
+  utils.valid(net, criterion, validData, validDataset, validAmount, opt.nValidSubCubesPerBrain, opt.batchSize, subsizes, lossInfo)
   -- saving model
   torch.save(modelName .. modelFilenameAdd .. 'model_' .. i .. '.t7', net:clearState())
   -- saving tables with loss
