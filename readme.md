@@ -24,8 +24,6 @@ The repository has following structure:
   Torch Lua code to predict segmentation given data and model
 - **utils.lua**  
   Torch Lua code for utility functions.
-- **prepare_data.lua**  
-  Example code for preparing data from numpy format to torch format. Maps intensity to unit interval.
 - **train.sh**  
   Example bash script for model training using **train.lua**.
 - **metrics.sh**  
