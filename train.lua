@@ -27,6 +27,7 @@ if not opt then
   cmd:option('-xLen', 68, 'sub-cube side length of brain data cube by x')
   cmd:option('-yLen', 68, 'sub-cube side length of brain data cube by y')
   cmd:option('-zLen', 68, 'sub-cube side length of brain data cube by z')
+  cmd:option('-std', {50, 50, 50}, 'std of gaussian sampling')
 
   cmd:option('-batchSize', 1, 'mini-batch size')
   cmd:option('-modelFile', './models/vdp_model.lua', 'File with architecture')
@@ -110,8 +111,8 @@ local sizes = trainData[1].input:size()
 -- define subvolumes sizes
 local subsizes = {sizes[1], opt.zLen, opt.yLen, opt.xLen}
 -- define mean and std for gaussian sampling
-local mean = opt.mean or {sizes[2]/2,  sizes[3]/2,  sizes[4]/2}
-local std = opt.std or {sizes[2]/6, sizes[3]/6, sizes[4]/6}
+local mean = {sizes[2]/2,  sizes[3]/2,  sizes[4]/2}
+local std = opt.std or {sizes[2]/6 + 8, sizes[3]/6 + 8, sizes[4]/6 + 8}
 
 -- makes training and validation dataset times of batch size
 local trainAmount = opt.nTrainPerEpoch - opt.nTrainPerEpoch % opt.batchSize

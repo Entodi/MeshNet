@@ -212,7 +212,7 @@ function utils.predict(brain, model, opt)
   local subsizes = {sizes[1], opt.zLen, opt.yLen, opt.xLen}
   -- define mean and std for gaussian sampling
   local mean = opt.mean or {sizes[2]/2,  sizes[3]/2,  sizes[4]/2}
-  local std = opt.std or {sizes[2]/6, sizes[3]/6, sizes[4]/6}
+  local std = opt.std or {sizes[2]/6 + 8, sizes[3]/6 + 8, sizes[4]/6 + 8}
   -- define softmax layer
   local softmax = cudnn.VolumetricLogSoftMax():cuda()
   -- correct number of subvvolumes based of batchsize

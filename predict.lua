@@ -24,6 +24,7 @@ if not opt then
   cmd:option('-seed', 123, 'seed')
   cmd:option('-nClasses', 3, 'Number of classes in labels')
   cmd:option('-sampleType', 'gaussian', 'Distribution for sampling subvolumes. gaussian')
+  cmd:option('-std', {50, 50, 50}, 'std of gaussian sampling')
   cmd:text()
   opt = cmd:parse(arg or {})
 end
