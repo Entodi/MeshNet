@@ -29,7 +29,7 @@ if not opt then
   cmd:option('-zLen', 68, 'sub-cube side length of brain data cube by z')
   cmd:option('-std', {50, 50, 50}, 'std of gaussian sampling')
 
-  cmd:option('-batchSize', 1, 'mini-batch size')
+  cmd:option('-batchSize', 2, 'mini-batch size')
   cmd:option('-modelFile', './models/vdp_model.lua', 'File with architecture')
   cmd:option('-optimization', 'adam', 'optimization method: SGD')
   cmd:option('-loss', 'VolumetricCrossEntropyCriterion', 
