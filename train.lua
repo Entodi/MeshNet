@@ -102,6 +102,7 @@ lossPlotFilename = string.format(
 modelFilenameAdd = ''
 
 print 'Loading data'
+local extend = {{opt.zLen/2, opt.zLen/2}, {opt.yLen/2, opt.yLen/2}, {opt.xLen/2, opt.xLen/2}}
 local trainFold = utils.lines_from(opt.trainFold)
 local validFold = utils.lines_from(opt.validFold)
 local trainData = utils.load_brains(trainFold, extend)
