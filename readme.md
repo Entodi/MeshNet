@@ -57,6 +57,9 @@ Model has been trained using NVIDIA Titan X (Pascal) with 12 GB. Model is using 
 [2] https://arxiv.org/abs/1612.00940 End-to-end learning of brain tissue segmentation from imperfect labeling. *Alex Fedorov, Jeremy Johnson, Eswar Damaraju, Alexei Ozerin, Vince D. Calhoun, Sergey M. Plis*  
 [3] http://www.humanconnectomeproject.org/ Human Connectome Project
 
+# Acknowledgment
+
+This work was supported by  NSF IIS-1318759 & NIH R01EB006841 grants.
 # Questions
 
 You can ask any questions about implementation and training by sending message to **afedorov@mrn.org**.
