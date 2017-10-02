@@ -11,7 +11,7 @@ def convert_npy_to_nii(npy_file, base_nifti_filename):
   save_image(img, npy_file[:-4] + '.nii')
 
 
-parser = argparse.ArgumentParser(description='Convert .nii to .npy')
+parser = argparse.ArgumentParser(description='Convert .npy to .nii')
 parser.add_argument('npy', metavar='npy_file', help='npy file for convert')
 parser.add_argument('nii', metavar='nii_file', help='nii base file', default='')
 args = parser.parse_args()
