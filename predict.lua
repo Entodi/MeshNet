@@ -34,8 +34,8 @@ print(opt)
 torch.manualSeed(opt.seed)
 -- set GPU device
 cutorch.setDevice(opt.gpuDevice)
--- load brain
-local brain = utils.load_brain(opt.brainPath)
+-- load brain (need to have just 'filename.npy' in brain path)
+local brain = utils.load_brain_nolabel(opt.brainPath)
 -- load model weights
 local model = utils.load_prediction_model(opt.modelFile)
 -- make prediction

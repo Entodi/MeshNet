@@ -47,6 +47,38 @@ function utils.init_identity(net)
   end
 end
 
+function utils.init_xavier(net)
+  --[[
+  Inits with xavier weights
+
+  Args:
+    net: network model
+  ]]
+  local identity3x3x3 = torch.FloatTensor(3,3,3):fill(0)
+  identity3x3x3[{1,1,1}] = 1
+
+  local n_layer = 1
+  for i = 1, #net.modules do
+    local m = net.modules[i]
+    if m.__typename == 'nn.VolumetricDilatedConvolution' then
+      m.bias = torch.FloatTensor(m.bias:size()):fill(0)
+      m.bias = randomkit.normal(m.bias, 0, 2.0/(m.nInputPlane + m.nOutputPlane))
+      for out_f = 1, m.nOutputPlane do
+        for in_f = 1, m.nInputPlane do
+          if n_layer ~= 8 then
+            t = torch.FloatTensor(3,3,3):fill(0)
+            t = randomkit.normal(t, 0, 2.0/(m.nInputPlane + m.nOutputPlane))
+            m.weight[{out_f, in_f, {}, {}, {}}] = t:clone()
+          else
+            m.weight[{out_f, in_f, {}, {}, {}}] = randomkit.normal(0, 2.0/(m.nInputPlane + m.nOutputPlane))
+          end
+        end
+      end
+      n_layer = n_layer + 1
+    end
+  end
+end
+
 function utils.train(net, criterion, optimMethod, data, coordinates, amount, nPerBrain, batchSize, subsizes, lossInfo)
   --[[
   Inits with identity weights
@@ -279,6 +311,33 @@ function utils.load_brains(pathes, extend, inputFiles, labelFile)
   return data
 end
 
+function utils.load_brain_nolabel(path, extend, inputFiles)
+    --[[
+    Load brains from fold.
+
+    Args:
+      path: path to brain directory
+      inputFiles: filenames with input images (for example: 'T1.npy', 'T2.npy'} for multi modal case)
+      extend: table of extensions of MRI image for every axis from left and right sides (Example table to extend from every side of axises MRI image by 10: {{10, 10}, {10, 10}, {10, 10}})
+    Returns:
+      data: brain data
+    ]]
+    inputFiles = inputFiles or {'T1.npy'}
+    extend = extend or {{0, 0}, {0, 0}, {0, 0}}
+    local data = {}
+    for j = 1, #inputFiles do
+      local t = npy4th.loadnpy(path .. inputFiles[j]):float()
+      -- scale to unit interval
+      t = (t - t:min()) / (t:max() - t:min())
+      if j == 1 then
+        data.input = torch.FloatTensor(#inputFiles, t:size()[1], t:size()[2], t:size()[3])
+      end
+      data.input[{j, {}, {}, {}}] = t
+    end
+    data = utils.extendData(data, extend)
+    return data
+end
+
 function utils.load_brain(path, extend, inputFiles, labelFile)
     --[[
     Load brains from fold.
@@ -403,18 +462,20 @@ function utils.extendData(data, extend)
     data.input:size()[2] + extend[1][1] + extend[1][2], 
     data.input:size()[3] + extend[2][1] + extend[2][2], 
     data.input:size()[4] + extend[3][1] + extend[3][2]):fill(0)
-  extend_data.target = torch.IntTensor(
-    data.target:size()[1] + extend[1][1] + extend[1][2], 
-    data.target:size()[2] + extend[2][1] + extend[2][2], 
-    data.target:size()[3] + extend[3][1] + extend[3][2]):fill(1)
   extend_data.input[{{},
     {1 + extend[1][1], data.input:size()[2] + extend[1][2]},
     {1 + extend[2][1], data.input:size()[3] + extend[2][2]},
     {1 + extend[3][1], data.input:size()[4] + extend[3][2]}}] = data.input
-  extend_data.target[{
-    {1 + extend[1][1], data.target:size()[1] + extend[1][2]},
-    {1 + extend[2][1], data.target:size()[2] + extend[2][2]},
-    {1 + extend[3][1], data.target:size()[3] + extend[3][2]}}] = data.target
+  if data.target then
+    extend_data.target = torch.IntTensor(
+      data.target:size()[1] + extend[1][1] + extend[1][2], 
+      data.target:size()[2] + extend[2][1] + extend[2][2], 
+      data.target:size()[3] + extend[3][1] + extend[3][2]):fill(1)
+    extend_data.target[{
+      {1 + extend[1][1], data.target:size()[1] + extend[1][2]},
+      {1 + extend[2][1], data.target:size()[2] + extend[2][2]},
+      {1 + extend[3][1], data.target:size()[3] + extend[3][2]}}] = data.target
+  end
   return extend_data
 end
 
@@ -457,18 +518,20 @@ function utils.reduceData(data, extend)
     data.input:size()[2] - extend[1][1] - extend[1][2], 
     data.input:size()[3] - extend[2][1] - extend[2][2], 
     data.input:size()[4] - extend[3][1] - extend[3][2]):fill(0)
-  reduced_data.target = torch.IntTensor(
-    data.target:size()[1] - extend[1][1] - extend[1][2], 
-    data.target:size()[2] - extend[2][1] - extend[2][2], 
-    data.target:size()[3] - extend[3][1] - extend[3][2]):fill(1)
   reduced_data.input = data.input[{{},
     {1 + extend[1][1], data.input:size()[2] - extend[1][2]},
     {1 + extend[2][1], data.input:size()[3] - extend[2][2]},
     {1 + extend[3][1], data.input:size()[4] - extend[3][2]}}]
-  reduced_data.target = data.target[{
-    {1 + extend[1][1], data.target:size()[1] - extend[1][2]},
-    {1 + extend[2][1], data.target:size()[2] - extend[2][2]},
-    {1 + extend[3][1], data.target:size()[3] - extend[3][2]}}]
+  if data.target then
+    reduced_data.target = torch.IntTensor(
+      data.target:size()[1] - extend[1][1] - extend[1][2], 
+      data.target:size()[2] - extend[2][1] - extend[2][2], 
+      data.target:size()[3] - extend[3][1] - extend[3][2]):fill(1)
+    reduced_data.target = data.target[{
+      {1 + extend[1][1], data.target:size()[1] - extend[1][2]},
+      {1 + extend[2][1], data.target:size()[2] - extend[2][2]},
+      {1 + extend[3][1], data.target:size()[3] - extend[3][2]}}]
+  end
   return reduced_data
 end
 

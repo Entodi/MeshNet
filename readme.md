@@ -36,6 +36,10 @@ The repository has following structure:
   Training fold with 20 subjects
 - **valid_fold.txt**  
   Validation fold with 2 subjects
+- **npy2nifti.py**  
+  Python script to convert volume from numpy to nifti format (Uses python nipy http://nipy.org/ and numpy http://www.numpy.org/ libraries)
+- **nifti2npy.py**  
+  Python script to convert volume from nifti to numpy format (Uses python nipy http://nipy.org/ and numpy http://www.numpy.org/ libraries)
 
 Model has been trained on 20 subjects T1 3T MRI images with slice thickness 1mm x 1mm x 1mm (256 x 256 x 256) from Human Connectome Project [3] and validated on 2 subjects during training.
 More details about the training process are published at IJCNN 2017 and described in a more up to date paper [2]. **IMPORTANT: model on github uses Volumetric Dropout instead of 1D Dropout (due to significant improvements). One epoch consists of 2048 subvolumes with size 68 x 68 x 68 and validated on same amount of subvolumes. Model is 219 epoch old.**
