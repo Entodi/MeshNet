@@ -58,6 +58,8 @@ net = dofile(opt.modelFile)
 print 'Weight initilization'
 if opt.weightInit == 'identity' then
   utils.init_identity(net)
+elseif opt.weightInit == 'xavier' then
+  utils.init_xavier(net)
 else
   print (opt.weightInit .. ' is not implemented')
 end

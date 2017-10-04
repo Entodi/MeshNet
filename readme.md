@@ -49,6 +49,25 @@ Additional packages are required: torch-randomkit (https://github.com/deepmind/t
 
 Model has been trained using NVIDIA Titan X (Pascal) with 12 GB. Model is using 9817 MB of GPU memory during training with batch size 1. Train time is about 3-4 days.
 
+# How to create your own segmentation
+1. You can skip this step if your T1 image with slice thickness 1mm x 1mm x 1mm and 256 x 256 x 256. 
+Using **mri_convert** from FreeSurfer (https://surfer.nmr.mgh.harvard.edu/) conform T1 to 1mm voxel size in coronal slice direction with side length 256.
+```
+mri_convert t1.nii t1_c.nii -c
+```
+2. Convert nifti to numpy format
+```
+python nifti2npy.py t1_c.nii 
+```
+3. Create segmentation using predict.lua providing path to directory with brain npy file *brainDir*
+```
+th predict.lua -modelFile ./saved_models/model_Mon_Jul_10_16:43:55_2017/model_219.t7 -brainPath *brainDir*
+```
+4. Convert numpy segmentation file to nifti format by providing base nifti file
+```
+python npy2nifti.py segmentation.npy t1_c.nii
+```
+
 # Result on subject **105216**
 | T1 MRI  | FreeSurfer | MeshNet |
 |---|---|---|
