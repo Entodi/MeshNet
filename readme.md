@@ -83,6 +83,8 @@ python npy2nifti.py segmentation.npy t1_c.nii
 # Acknowledgment
 
 This work was supported by  NSF IIS-1318759 & NIH R01EB006841 grants.
+Data were provided [in part] by the Human Connectome Project, WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience at Washington University.
+
 # Questions
 
 You can ask any questions about implementation and training by sending message to **afedorov@mrn.org**.
