@@ -53,11 +53,11 @@ Model has been trained using NVIDIA Titan X (Pascal) with 12 GB. Model is using 
 1. You can skip this step if your T1 image with slice thickness 1mm x 1mm x 1mm and 256 x 256 x 256. 
 Using **mri_convert** from FreeSurfer (https://surfer.nmr.mgh.harvard.edu/) conform T1 to 1mm voxel size in coronal slice direction with side length 256.
 ```
-mri_convert t1.nii t1_c.nii -c
+mri_convert *brainDir*/t1.nii *brainDir*/t1_c.nii -c
 ```
 2. Convert nifti to numpy format
 ```
-python nifti2npy.py t1_c.nii 
+python nifti2npy.py *brainDir*/t1_c.nii --npy_file *brainDir*/T1.npy
 ```
 3. Create segmentation using predict.lua providing path to directory with brain npy file *brainDir*
 ```
