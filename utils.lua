@@ -240,11 +240,12 @@ function utils.predict(brain, model, opt)
   local extend = opt.extend or {{0, 0}, {0, 0}, {0, 0}}
   -- define volume sizes
   local sizes = brain.input:size()
-    -- define subvolumes sizes
+  sizes = {sizes[1], sizes[2] + math.floor((extend[1][1] + extend[1][2]) / 2),  sizes[3] + math.floor((extend[2][1] + extend[2][2]) / 2),  sizes[4] + math.floor((extend[3][1] + extend[3][2]) / 2)}
+  -- define subvolumes sizes
   local subsizes = {sizes[1], opt.zLen, opt.yLen, opt.xLen}
   -- define mean and std for gaussian sampling
-  local mean = opt.mean or {sizes[2]/2,  sizes[3]/2,  sizes[4]/2}
-  local std = opt.std or {sizes[2]/6 + 8, sizes[3]/6 + 8, sizes[4]/6 + 8}
+  local mean = opt.mean or {math.floor(sizes[2]/2), math.floor(sizes[3]/2), math.floor(sizes[4]/2)}
+  local std = opt.std or {math.floor(sizes[2]/6) + 8, math.floor(sizes[3]/6) + 8, math.floor(sizes[4]/6) + 8}
   -- define softmax layer
   local softmax = cudnn.VolumetricLogSoftMax():cuda()
   -- correct number of subvvolumes based of batchsize
@@ -624,7 +625,7 @@ function utils.gather_maxclass(dnnOutput, outputCube, coords, offset)
   for id = 1, dnnOutput:size()[1] do
     local splitPrediction = utils.split_classes(inds[{id, 1, {}, {}, {}}], dnnOutput:size()[2])
     outputCube = gather_prediction(
-      outputCube, splitPrediction, coords[offset])
+      outputCube, splitPrediction, coords[id + offset - 1])
   end
   return outputCube
 end
@@ -644,7 +645,7 @@ function utils.gather_maxsoftmax(dnnOutput, outputCube, coords, offset)
     outputCube: aggregated probability for majority voting
   ]]
   for id = 1, dnnOutput:size()[1] do
-    local c = coords[offset] 
+    local c = coords[id + offset - 1] 
     outputCube[{{}, {c.z1, c.z2}, {c.y1, c.y2}, {c.x1, c.x2}}] = 
       outputCube[{{}, {c.z1, c.z2}, {c.y1, c.y2}, {c.x1, c.x2}}]
       + dnnOutput[id]:double()
