@@ -1,6 +1,6 @@
 # End-to-end learning for brain tissue segmentation
 
-This repository contains Torch implementation of MeshNet architecture. MeshNet is volumetric convolutional neural network based on dilated kernels [1] for image segmentation. Model has been trained for brain tissue segmentation from imperfect labeling obtained using FreeSurfer automatic approach. The repository also contains weights of trained model with volumetric dropout.
+This repository contains Torch implementation of MeshNet architecture. MeshNet is volumetric convolutional neural network based on dilated kernels [1] for image segmentation. Model has been trained for brain tissue segmentation from imperfect labeling obtained using FreeSurfer automatic approach. The repository also contains weights of trained model with volumetric dropout for gray and white matter.
 
 #  Brain Atlas segmentation with [**brainchop.org**](http://brainchop.org)
 To get brain atlas segmentation (https://arxiv.org/abs/1711.00457 extension of this work) you don't need to run any code. Just sign up at [**brainchop.org**](http://brainchop.org), upload your 3T MRI T1 image and get brain atlas in 1-2 minutes.
