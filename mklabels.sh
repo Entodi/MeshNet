@@ -7,18 +7,17 @@ CURDIR=`pwd`
 cd $DATADIR
 
 if [ ! -f aparc+aseg.nii ]; then
-   mri_convert aparc+aseg.mgz ${OUTDIR}/aparc+aseg.nii
+   mri_convert aparc+aseg.mgz ${OUTDIR}/aparc+aseg.nii.gz
 fi
 
 if [ ! -f T1.nii ]; then
-   mri_convert T1.mgz ${OUTDIR}/T1.nii
-   3dUnifize -input ${OUTDIR}/T1.nii -prefix ${OUTDIR}/T1_U.nii
+   mri_convert T1.mgz ${OUTDIR}/T1.nii.gz
 fi
 
 cd $OUTDIR
 
 if [ ! -f all_wmN.nii ]; then
-   3dcalc -a aparc+aseg.nii -expr 'equals(a,2)+equals(a,41)+equals(a,7)+equals(a,16)+equals(a,46)+and(step(a-250),step(256-a))' -prefix all_wmN.nii
+   3dcalc -a aparc+aseg.nii.gz -expr 'equals(a,2)+equals(a,41)+equals(a,7)+equals(a,16)+equals(a,46)+and(step(a-250),step(256-a))' -prefix all_wmN.nii
 fi
 
 if [ ! -f all_gmN.nii ]; then

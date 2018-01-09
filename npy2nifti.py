@@ -8,7 +8,7 @@ def convert_npy_to_nii(npy_file, base_nifti_filename):
   bnifti = load_image(base_nifti_filename)
   img = Image.from_image(bnifti, data=npy_data)
   print (img.get_data().shape, img.get_data().max(), img.get_data().min(), img.get_data().dtype)
-  save_image(img, npy_file[:-4] + '.nii')
+  save_image(img, npy_file[:-4] + '.nii.gz')
 
 
 parser = argparse.ArgumentParser(description='Convert .npy to .nii')
