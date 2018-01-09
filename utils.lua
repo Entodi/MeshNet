@@ -303,7 +303,7 @@ function utils.load_brains(pathes, extend, inputFiles, labelFile)
     return {}
   end
   inputFiles = inputFiles or {'T1.npy'}
-  labelFile = labelFile or 'gm_wm.npy'
+  labelFile = labelFile or 'labels.npy'
   extend = extend or {{0, 0}, {0, 0}, {0, 0}}
   local data = {}
   for i = 1, #pathes do
@@ -352,7 +352,7 @@ function utils.load_brain(path, extend, inputFiles, labelFile)
       data: brain data
     ]]
     inputFiles = inputFiles or {'T1.npy'}
-    labelFile = labelFile or 'gm_wm.npy'
+    labelFile = labelFile or 'labels.npy'
     extend = extend or {{0, 0}, {0, 0}, {0, 0}}
     local data = {}
     for j = 1, #inputFiles do
