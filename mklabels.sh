@@ -31,7 +31,7 @@ fi
 python << END
 from nipy import save_image, load_image
 import numpy as np
-T1 = load_image('${OUTDIR}/T1.nii')
+T1 = load_image('${OUTDIR}/T1.nii.gz')
 labels = load_image('${OUTDIR}/labels.nii')
 
 
