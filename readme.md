@@ -51,7 +51,7 @@ Model has been trained on 20 subjects T1 3T MRI images with slice thickness 1mm 
 More details about the training process are published at IJCNN 2017 and described in a more up to date paper [2]. **IMPORTANT: model on github uses Volumetric Dropout instead of 1D Dropout (due to significant improvements). One epoch consists of 2048 subvolumes with size 68 x 68 x 68 and validated on same amount of subvolumes. Model is 219 epoch old.**
 
 Code is written on Lua using Torch deep learning library (http://torch.ch/).
-Additional packages are required: torch-randomkit (https://github.com/deepmind/torch-randomkit), npy4th (https://github.com/htwaijry/npy4th), torch-dataframe (https://github.com/AlexMili/torch-dataframe), csvigo (https://github.com/clementfarabet/lua---csv).
+Additional packages are required: torch-randomkit (https://github.com/deepmind/torch-randomkit), npy4th (https://github.com/htwaijry/npy4th), torch-dataframe (https://github.com/AlexMili/torch-dataframe), csvigo (https://github.com/clementfarabet/lua---csv), torch-distributions (http://deepmind.github.io/torch-distributions/).
 
 Model has been trained using NVIDIA Titan X (Pascal) with 12 GB. Model is using 9817 MB of GPU memory during training with batch size 1. Train time is about 3-4 days.
 
